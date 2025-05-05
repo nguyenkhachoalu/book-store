@@ -9,7 +9,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class DataResponseUser {
+public class UserResponse {
     UUID id;
     String fullName;
     String username;

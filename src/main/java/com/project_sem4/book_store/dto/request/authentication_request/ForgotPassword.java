@@ -1,4 +1,4 @@
-package com.project_sem4.book_store.dto.response;
+package com.project_sem4.book_store.dto.request.authentication_request;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -8,7 +8,6 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class IntrospectResponse {
-    boolean valid;
-
+public class ForgotPassword {
+    String username;
 }
