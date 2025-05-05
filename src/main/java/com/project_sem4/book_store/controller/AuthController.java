@@ -4,11 +4,12 @@ import com.project_sem4.book_store.dto.request.authentication_request.Introspect
 import com.project_sem4.book_store.dto.request.authentication_request.LoginRequest;
 import com.project_sem4.book_store.dto.request.authentication_request.LogoutRequest;
 import com.project_sem4.book_store.dto.request.authentication_request.RefreshRequest;
+import com.project_sem4.book_store.dto.request.user_request.ForgotPasswordRequest;
 import com.project_sem4.book_store.dto.request.user_request.UserCreateRequest;
 import com.project_sem4.book_store.dto.response.ApiResponse;
 import com.project_sem4.book_store.dto.response.AuthenticationResponse;
 import com.project_sem4.book_store.dto.response.IntrospectResponse;
-import com.project_sem4.book_store.dto.response.UserResponse;
+import com.project_sem4.book_store.dto.response.data_response_user.UserResponse;
 import com.project_sem4.book_store.service.AuthenticationService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -34,6 +35,18 @@ public class AuthController {
     public ApiResponse<String> confirmCodeRegister(@RequestParam String confirmCode) {
         return ApiResponse.<String>builder()
                 .result(authenticationService.confirmRegisterAccount(confirmCode))
+                .build();
+    }
+    @PostMapping("/forgot_password")
+    ApiResponse<UserResponse> forgotPassword(@RequestBody @Valid ForgotPasswordRequest request) {
+        return ApiResponse.<UserResponse>builder()
+                .result(authenticationService.forgotPassword(request))
+                .build();
+    }
+    @PostMapping("/confirm_forgot_password")
+    public ApiResponse<String> confirmCodeForgotPassword(@RequestParam String confirmCode) {
+        return ApiResponse.<String>builder()
+                .result(authenticationService.confirmForgotPassword(confirmCode))
                 .build();
     }
     @PostMapping("/login")

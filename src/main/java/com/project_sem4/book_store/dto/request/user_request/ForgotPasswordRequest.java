@@ -1,4 +1,4 @@
-package com.project_sem4.book_store.dto.request.authentication_request;
+package com.project_sem4.book_store.dto.request.user_request;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -8,6 +8,6 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ForgotPassword {
+public class ForgotPasswordRequest {
     String username;
 }

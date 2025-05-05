@@ -20,7 +20,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 public class SercurityConfig {
 
-    private final String[] PUBLIC_ENDPOINS = {"/users","/auth/login", "/auth/introspect", "/auth/logout", "/auth/refresh"};
+    private final String[] PUBLIC_ENDPOINS = {"/users","/auth/login", "/auth/introspect", "/auth/refresh", "/auth/register", "/auth/confirm_register", "/auth/forgot_password", "/auth/confirm_forgot_password"};
 
     @Value("${jwt.signerKey}")
     private String signerKey;

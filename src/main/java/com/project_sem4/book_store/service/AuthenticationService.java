@@ -7,14 +7,12 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.project_sem4.book_store.dto.handle.handle_email.EmailMessage;
 import com.project_sem4.book_store.dto.mapper.UserMapper;
-import com.project_sem4.book_store.dto.request.authentication_request.IntrospectRequest;
-import com.project_sem4.book_store.dto.request.authentication_request.LoginRequest;
-import com.project_sem4.book_store.dto.request.authentication_request.LogoutRequest;
-import com.project_sem4.book_store.dto.request.authentication_request.RefreshRequest;
+import com.project_sem4.book_store.dto.request.authentication_request.*;
+import com.project_sem4.book_store.dto.request.user_request.ForgotPasswordRequest;
 import com.project_sem4.book_store.dto.request.user_request.UserCreateRequest;
 import com.project_sem4.book_store.dto.response.AuthenticationResponse;
 import com.project_sem4.book_store.dto.response.IntrospectResponse;
-import com.project_sem4.book_store.dto.response.UserResponse;
+import com.project_sem4.book_store.dto.response.data_response_user.UserResponse;
 import com.project_sem4.book_store.entity.*;
 import com.project_sem4.book_store.exception.AppException;
 import com.project_sem4.book_store.exception.ErrorCode;
@@ -28,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.text.ParseException;
@@ -118,46 +115,111 @@ public class AuthenticationService {
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
         }
     }
-    public UserResponse forgotPassword(a)
+
     public String confirmRegisterAccount(String confirmCode) {
-        ConfirmEmail code = confirmEmailRepository
-                .findByConfirmCode(confirmCode)
-                .orElseThrow(() -> new AppException(ErrorCode.CONFIRM_CODE_NOT_FOUND));
+        try{
+            ConfirmEmail code = confirmEmailRepository
+                    .findByConfirmCode(confirmCode)
+                    .orElseThrow(() -> new AppException(ErrorCode.CONFIRM_CODE_NOT_FOUND));
 
 
-        if (Boolean.TRUE.equals(code.getIsConfirm())
-                || Boolean.FALSE.equals(code.getIsActive())
-                || code.getExpiryTime().isBefore(LocalDateTime.now())) {
-            throw new AppException(ErrorCode.CONFIRM_CODE_EXPIRED); // hoặc tạo mã lỗi riêng như CONFIRM_CODE_EXPIRED
+            if (Boolean.TRUE.equals(code.getIsConfirm())
+                    || Boolean.FALSE.equals(code.getIsActive())
+                    || code.getExpiryTime().isBefore(LocalDateTime.now())) {
+                throw new AppException(ErrorCode.CONFIRM_CODE_EXPIRED); // hoặc tạo mã lỗi riêng như CONFIRM_CODE_EXPIRED
+            }
+
+            User user = userRepository.findById(code.getUserId())
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+            user.setIsActive(true);
+            code.setIsConfirm(true);
+            code.setIsActive(false);
+
+            Wallet wallet = Wallet.builder()
+                    .userId(user.getId())
+                    .currency("VND")
+                    .balance(BigDecimal.ZERO)
+                    .isActive(true)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            Cart cart = Cart.builder()
+                    .userId(user.getId())
+                    .totalPrice(BigDecimal.ZERO)
+                    .createdAt(LocalDateTime.now())
+                    .isActive(true)
+                    .build();
+
+            walletRepository.save(wallet);
+            cartRepository.save(cart);
+            userRepository.save(user);
+            confirmEmailRepository.save(code);
+
+            return "Xác nhận đăng ký thành công";
+        } catch (Exception e) {
+            log.error("Confirm register false ",e);
+            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
         }
+    }
+    public UserResponse forgotPassword(ForgotPasswordRequest request){
+        try {
+            User user = userRepository.findByUsername(request.getUsername())
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+            ConfirmEmail confirmEmail = ConfirmEmail.builder()
+                    .userId(user.getId())
+                    .confirmCode(generateCodeActive())
+                    .expiryTime(LocalDateTime.now().plusMinutes(5))
+                    .createTime(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .isConfirm(false)
+                    .isActive(true)
+                    .build();
+            confirmEmailRepository.save(confirmEmail);
+            String emailContent = emailService.generateConfirmationCodeEmail(confirmEmail.getConfirmCode());
+            EmailMessage message = new EmailMessage(List.of(user.getEmail()),
+                    "Mã đặt lại mật khẩu của " + user.getFullName(), emailContent);
+            emailService.sendEmail(message);
+            return userMapper.toUserResponse(user);
+        } catch (Exception e) {
+            log.error("Forgot Password false ",e);
+            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+        }
+    }
 
-        User user = userRepository.findById(code.getUserId())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+    public String confirmForgotPassword(String confirmCode){
+        try{
+            ConfirmEmail confirmEmail = confirmEmailRepository.findByConfirmCode(confirmCode)
+                    .orElseThrow(() -> new AppException(ErrorCode.CONFIRM_CODE_NOT_FOUND));
+            if (Boolean.TRUE.equals(confirmEmail.getIsConfirm())
+                    || Boolean.FALSE.equals(confirmEmail.getIsActive())
+                    || confirmEmail.getExpiryTime().isBefore(LocalDateTime.now())) {
+                throw new AppException(ErrorCode.CONFIRM_CODE_EXPIRED);
+            }
+            User user = userRepository.findById(confirmEmail.getUserId())
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        user.setIsActive(true);
-        code.setIsConfirm(true);
-        code.setIsActive(false);
+            confirmEmail.setIsConfirm(true);
+            confirmEmail.setIsActive(false);
+            confirmEmail.setUpdatedAt(LocalDateTime.now());
+            confirmEmailRepository.save(confirmEmail);
 
-        Wallet wallet = Wallet.builder()
-                .userId(user.getId())
-                .currency("VND")
-                .isActive(true)
-                .createdAt(LocalDateTime.now())
-                .build();
 
-        Cart cart = Cart.builder()
-                .userId(user.getId())
-                .totalPrice(BigDecimal.ZERO)
-                .createdAt(LocalDateTime.now())
-                .isActive(true)
-                .build();
+            String generatePassword = generateRandomPassword();
 
-        walletRepository.save(wallet);
-        cartRepository.save(cart);
-        userRepository.save(user);
-        confirmEmailRepository.save(code);
+            user.setPassword(passwordEncoder.encode(generatePassword));
+            user.setUpdatedAt(LocalDateTime.now());
+            userRepository.save(user);
+            String emailContent = emailService.generateForgotPassword(generatePassword);
+            EmailMessage message = new EmailMessage(List.of(user.getEmail()),
+                    "Mật khẩu mới của " + user.getUsername(), emailContent);
+            emailService.sendEmail(message);
 
-        return "Xác nhận đăng ký thành công";
+            return "Mật khẩu mới đã được gửi tới email của bạn";
+        } catch (Exception e) {
+            log.error("Confirm forgot pasword false ",e);
+            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+        }
     }
 
 
@@ -278,6 +340,7 @@ public class AuthenticationService {
                     .expirationTime(Date.from(Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS)))
                     .jwtID(UUID.randomUUID().toString())
                     .claim("scope", buildScope(user.getId()))
+                    .claim("fullName", user.getFullName())
                     .build();
             JWSObject jwsObject = new JWSObject(header, new Payload(jwtClaimsSet.toJSONObject()));
             jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
@@ -309,6 +372,17 @@ public class AuthenticationService {
         int code = random.nextInt(100000);
         return String.format("%06d", code);
     }
+    public String generateRandomPassword() {
+        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        StringBuilder password = new StringBuilder();
+        Random random = new Random();
 
+        for (int i = 0; i < 6; i++) {
+            int index = random.nextInt(characters.length());
+            password.append(characters.charAt(index));
+        }
+
+        return password.toString();
+    }
 
 }

@@ -16,10 +16,15 @@ public enum ErrorCode {
     INVALID_PHONE_FORMAT(1005, "Số điện thoại không hợp lệ", HttpStatus.BAD_REQUEST),
     USERNAME_INVALID(1006, "Tên người dùng phải có ít nhất {min} ký tự", HttpStatus.BAD_REQUEST),
     PASSWORD_INVALID(1007, "Mật khẩu phải có ít nhất {min} ký tự", HttpStatus.BAD_REQUEST),
+    FULL_NAME_INVALID(1008, "Tên phải có ít nhất {min} ký tự", HttpStatus.BAD_REQUEST),
+
+    // 1xxx: Password Validation
+    INVALID_PASSWORD(1010, "Mật khẩu hiện tại không đúng", HttpStatus.BAD_REQUEST),
+    PASSWORD_SAME_AS_OLD(1011, "Mật khẩu mới không được trùng với mật khẩu cũ", HttpStatus.BAD_REQUEST),
 
     // 1xxx: Confirm Code Validation
-    CONFIRM_CODE_EXPIRED(1010, "Mã xác nhận đã hết hạn hoặc không còn hiệu lực", HttpStatus.BAD_REQUEST),
-    CONFIRM_CODE_NOT_FOUND(1011, "Không tìm thấy mã xác nhận", HttpStatus.NOT_FOUND),
+    CONFIRM_CODE_EXPIRED(1020, "Mã xác nhận đã hết hạn hoặc không còn hiệu lực", HttpStatus.BAD_REQUEST),
+    CONFIRM_CODE_NOT_FOUND(1021, "Không tìm thấy mã xác nhận", HttpStatus.NOT_FOUND),
 
     // 2xxx: Authorization
     UNAUTHENTICATED(2000, "Chưa xác thực", HttpStatus.UNAUTHORIZED),
@@ -32,7 +37,8 @@ public enum ErrorCode {
 
     // 3xxx: Entity
     USER_NOT_EXISTED(3000, "Người dùng không tồn tại", HttpStatus.NOT_FOUND),
-
+    ROLE_NOT_FOUND(3001, "Không tìm thấy quyền phù hợp", HttpStatus.BAD_REQUEST),
+    ROLE_LIST_EMPTY(3002, "Danh sách quyền không được để trống", HttpStatus.BAD_REQUEST),
     // 9999: Uncategorized
     UNCATEGORIZED_EXCEPTION(9999, "Lỗi không xác định", HttpStatus.INTERNAL_SERVER_ERROR);
 
