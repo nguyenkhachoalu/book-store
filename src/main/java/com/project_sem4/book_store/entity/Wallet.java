@@ -24,6 +24,7 @@ public class Wallet {
     @Column(name = "user_id", nullable = false)
     UUID userId;
 
+    @Setter(AccessLevel.NONE)
     @Column(nullable = false, precision = 18, scale = 2)
     BigDecimal balance;
 
@@ -40,4 +41,15 @@ public class Wallet {
 
     @Column(name = "is_active")
     Boolean isActive;
+
+    public void increaseBalance(BigDecimal amount) {
+        this.balance = this.balance.add(amount);
+    }
+
+    public void decreaseBalance(BigDecimal amount) {
+        if (this.balance.compareTo(amount) < 0) {
+            throw new IllegalArgumentException("Số dư không đủ");
+        }
+        this.balance = this.balance.subtract(amount);
+    }
 }

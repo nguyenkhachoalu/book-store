@@ -1,6 +1,7 @@
 package com.project_sem4.book_store.service;
 
 import com.project_sem4.book_store.dto.handle.handle_email.EmailMessage;
+import com.project_sem4.book_store.exception.AppException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
@@ -40,6 +41,8 @@ public class EmailServiceImpl implements EmailService {
             mailSender.send(message);
 
             return "Gửi email thành công tới: " + String.join(", ", emailMessage.getTo());
+        }catch (AppException e) {
+            throw e;
         } catch (MessagingException e) {
             throw new RuntimeException("Gửi email thất bại: " + e.getMessage());
         }
@@ -82,7 +85,7 @@ public class EmailServiceImpl implements EmailService {
         return "<html>" +
                 "<body style='font-family: Arial, sans-serif; text-align: center;'>" +
                 "<div style='border: 1px solid #ddd; padding: 20px; max-width: 600px; margin: 0 auto;'>" +
-                "<h2 style='color: #333;'>Đơn Hàng của " + userName + " đã Giao cho bên vận chuyển</h2>" +
+                "<h2 style='color: #333;'>Đơn Hàng của " + userName + " đã được xác nhận và bàn giao cho đơn vị vận chuyển</h2>" +
                 "<p>Xin chào,</p>" +
                 "<p>Đơn hàng đang được vận chuyển tới quý khách trong thời gian sớm nhất</p>" +
                 "<p>Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của chúng tôi.</p><br/>" +

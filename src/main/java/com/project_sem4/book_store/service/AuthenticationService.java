@@ -40,12 +40,10 @@ import java.util.*;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthenticationService {
     RoleRepository roleRepository;
-    UserRoleRepository userRoleRepository;
     CartRepository cartRepository;
     WalletRepository walletRepository;
     UserRepository userRepository;
     ConfirmEmailRepository confirmEmailRepository;
-    UserRoleService userRoleService;
     EmailService emailService;
     UserMapper userMapper;
     RefreshTokenRepository refreshTokenRepository;
@@ -79,7 +77,8 @@ public class AuthenticationService {
             if (!ValidateInput.isValidPhoneNumber(request.getPhone())) {
                 throw new AppException(ErrorCode.INVALID_PHONE_FORMAT);
             }
-
+            Role userRole = roleRepository.findByRoleCode("USER")
+                    .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
             User user = User.builder()
                     .fullName(request.getFull_name())
                     .username(request.getUsername().toLowerCase())
@@ -89,10 +88,9 @@ public class AuthenticationService {
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .isActive(false)
+                    .roles(Set.of(userRole))
                     .build();
             userRepository.save(user);
-            userRoleService.assignRoles(user, List.of("USER"));
-
             ConfirmEmail confirmEmail = ConfirmEmail.builder()
                     .userId(user.getId())
                     .confirmCode(generateCodeActive())
@@ -110,7 +108,9 @@ public class AuthenticationService {
             emailService.sendEmail(message);
 
             return userMapper.toUserResponse(user);
-        } catch (Exception e) {
+        } catch (AppException e) {
+            throw e;
+        }catch (Exception e) {
             log.error("Register failed", e);
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
         }
@@ -157,6 +157,8 @@ public class AuthenticationService {
             confirmEmailRepository.save(code);
 
             return "Xác nhận đăng ký thành công";
+        }catch (AppException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Confirm register false ",e);
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
@@ -181,6 +183,8 @@ public class AuthenticationService {
                     "Mã đặt lại mật khẩu của " + user.getFullName(), emailContent);
             emailService.sendEmail(message);
             return userMapper.toUserResponse(user);
+        }catch (AppException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Forgot Password false ",e);
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
@@ -216,7 +220,9 @@ public class AuthenticationService {
             emailService.sendEmail(message);
 
             return "Mật khẩu mới đã được gửi tới email của bạn";
-        } catch (Exception e) {
+        } catch (AppException e) {
+            throw e;
+        }catch (Exception e) {
             log.error("Confirm forgot pasword false ",e);
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
         }
@@ -292,6 +298,8 @@ public class AuthenticationService {
                     .accessToken(newToken)
                     .authenticated(true)
                     .build();
+        }catch (AppException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Refresh token failed", e);
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
@@ -319,6 +327,8 @@ public class AuthenticationService {
                     .refreshToken(refreshToken.getToken())
                     .authenticated(true)
                     .build();
+        } catch (AppException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Login failed", e);
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
@@ -327,6 +337,7 @@ public class AuthenticationService {
     public void logout(LogoutRequest request) {
         refreshTokenRepository.findByToken(request.getToken()).ifPresent(token -> {
             token.setIsActive(false);  // Đánh dấu token này là không còn hợp lệ
+            token.setUpdatedAt(LocalDateTime.now());
             refreshTokenRepository.save(token);
         });
     }
@@ -345,6 +356,8 @@ public class AuthenticationService {
             JWSObject jwsObject = new JWSObject(header, new Payload(jwtClaimsSet.toJSONObject()));
             jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
             return jwsObject.serialize();
+        }catch (AppException e) {
+            throw e;
         } catch (Exception ex) {
             log.error("Token generation failed", ex);
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
@@ -353,14 +366,16 @@ public class AuthenticationService {
 
     String buildScope(UUID userId){
         StringJoiner stringJoiner = new StringJoiner(" ");
-        List<UserRole> userRoles = userRoleRepository.findByUserId(userId); // 👈 thêm hàm này vào repo
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        for (UserRole userRole : userRoles) {
-            Role role = roleRepository.findById(userRole.getRoleId())
-                    .orElse(null);
-            if (role != null) {
-                stringJoiner.add("ROLE_" + role.getRoleCode());
-                // Nếu có permission thì xử lý tiếp ở đây (nếu có bảng Permission)
+        for (Role role : user.getRoles()) {
+            stringJoiner.add("ROLE_" + role.getRoleCode());
+
+            if (role.getPermissions() != null) {
+                for (Permission permission : role.getPermissions()) {
+                    stringJoiner.add(permission.getPermissionCode());
+                }
             }
         }
 

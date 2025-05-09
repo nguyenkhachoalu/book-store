@@ -6,6 +6,7 @@ import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 @Data
@@ -24,7 +25,7 @@ public class Transaction {
     UUID walletId;
 
     @Column(nullable = false, precision = 18, scale = 2)
-    java.math.BigDecimal amount;
+    BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "transaction_type", nullable = false, length = 50)

@@ -20,7 +20,7 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
 
     @Override
     public Page<User> searchUsers(String keyword, UserSearchType type, Pageable pageable) {
-        String baseQuery = "SELECT u FROM User u WHERE ";
+        String baseQuery = "SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.roles WHERE ";
         String condition;
 
         switch (type) {
@@ -37,7 +37,11 @@ public class CustomUserRepositoryImpl implements CustomUserRepository {
         TypedQuery<User> query = entityManager.createQuery(queryStr, User.class);
         query.setParameter("keyword", "%" + keyword.toLowerCase() + "%");
 
-        int total = query.getResultList().size();
+        // Count query needs to remove FETCH JOIN to avoid error
+        String countQueryStr = "SELECT COUNT(DISTINCT u) FROM User u WHERE " + condition;
+        TypedQuery<Long> countQuery = entityManager.createQuery(countQueryStr, Long.class);
+        countQuery.setParameter("keyword", "%" + keyword.toLowerCase() + "%");
+        Long total = countQuery.getSingleResult();
 
         query.setFirstResult((int) pageable.getOffset());
         query.setMaxResults(pageable.getPageSize());

@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -37,4 +38,6 @@ public class Role {
 
     @Column(name = "is_active")
     Boolean isActive;
+    @ManyToMany
+    Set<Permission> permissions;
 }

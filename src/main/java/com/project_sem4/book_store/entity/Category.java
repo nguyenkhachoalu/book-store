@@ -6,6 +6,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 @Data
 @NoArgsConstructor
@@ -32,4 +34,7 @@ public class Category {
 
     @Column(name = "is_active")
     Boolean isActive;
+
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<BookCategory> bookCategories = new ArrayList<>();
 }

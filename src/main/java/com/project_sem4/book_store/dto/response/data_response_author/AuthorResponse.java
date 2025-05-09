@@ -1,6 +1,9 @@
-package com.project_sem4.book_store.entity;
+package com.project_sem4.book_store.dto.response.data_response_author;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
@@ -8,27 +11,15 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Entity
-@Table(name = "role_permissions")
-@IdClass(RolePermissionId.class)
-public class RolePermission {
-    @Id
-    UUID roleId;
-
-    @Id
-    UUID permissionId;
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+public class AuthorResponse {
+    UUID id;
+    String authorName;
     LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
     LocalDateTime updatedAt;
+    Boolean isActive;
 }

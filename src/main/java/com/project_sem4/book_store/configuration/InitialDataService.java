@@ -2,10 +2,8 @@ package com.project_sem4.book_store.configuration;
 
 import com.project_sem4.book_store.entity.Role;
 import com.project_sem4.book_store.entity.User;
-import com.project_sem4.book_store.entity.UserRole;
 import com.project_sem4.book_store.repository.RoleRepository;
 import com.project_sem4.book_store.repository.UserRepository;
-import com.project_sem4.book_store.repository.UserRoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -13,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +19,6 @@ public class InitialDataService {
 
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
-    private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
 
     private static final List<String> DEFAULT_ROLES = List.of("ADMIN", "USER", "MANAGER", "SHIPPER", "SELLER");
@@ -57,14 +54,9 @@ public class InitialDataService {
                 .isActive(true)
                 .createdAt(now)
                 .updatedAt(now)
+                .roles(Set.of(adminRole))
                 .build();
         userRepository.save(admin);
 
-        userRoleRepository.save(UserRole.builder()
-                .userId(admin.getId())
-                .roleId(adminRole.getId())
-                .createdAt(now)
-                .updatedAt(now)
-                .build());
     }
 }
