@@ -14,13 +14,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SercurityConfig {
 
-    private final String[] PUBLIC_ENDPOINS = {"/users","/auth/login", "/auth/introspect", "/auth/refresh", "/auth/register", "/auth/confirm_register", "/auth/forgot_password", "/auth/confirm_forgot_password"};
+    private final String[] PUBLIC_ENDPOINS = {"/users","/auth/login", "/auth/introspect", "/auth/refresh", "/auth/register", "/auth/confirm_register", "/auth/forgot_password", "/auth/confirm_forgot_password", "/auth/introspect"};
 
     @Value("${jwt.signerKey}")
     private String signerKey;
@@ -30,8 +33,12 @@ public class SercurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception{
-        httpSecurity.authorizeHttpRequests(request ->
+        httpSecurity
+                .cors(c -> c.configurationSource(corsConfigurationSource()))
+                .authorizeHttpRequests(request ->
                 request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINS).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/books").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .anyRequest().authenticated());
 
         httpSecurity.oauth2ResourceServer(oauth2 ->
@@ -56,6 +63,17 @@ public class SercurityConfig {
 
         return jwtAuthenticationConverter;
     }
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.addAllowedOrigin("http://127.0.0.1:5500");
+        config.addAllowedHeader("*");
+        config.addAllowedMethod("*");
+        config.setAllowCredentials(true); // Nếu cần dùng cookie hoặc token
 
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
 }
 

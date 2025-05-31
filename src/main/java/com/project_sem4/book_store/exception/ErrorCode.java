@@ -17,6 +17,11 @@ public enum ErrorCode {
     EMAIL_EXISTS(1006, "Email đã được sử dụng", HttpStatus.BAD_REQUEST),
     PHONE_EXISTS(1007, "Số điện thoại đã được sử dụng", HttpStatus.BAD_REQUEST),
     USER_EXISTED(1008, "Người dùng đã tồn tại", HttpStatus.BAD_REQUEST),
+    INVALID_DATA_FORMAT(1009, "Dữ liệu đầu vào không hợp lệ", HttpStatus.BAD_REQUEST),
+    // 1xxx: File Upload
+    FILE_EMPTY(1015, "File rỗng", HttpStatus.BAD_REQUEST),
+    INVALID_FILE_TYPE(1016, "Loại file không hợp lệ. Chỉ chấp nhận ảnh jpeg/png/webp", HttpStatus.BAD_REQUEST),
+    FILE_UPLOAD_FAILED(1017, "Tải file thất bại", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // 1xxx: Book Validation
     BOOK_TITLE_REQUIRED(1010, "Tiêu đề sách không được để trống", HttpStatus.BAD_REQUEST),
@@ -67,13 +72,17 @@ public enum ErrorCode {
     WALLET_NOT_FOUND(3005, "Ví tiền không tồn tại", HttpStatus.NOT_FOUND),
     TRANSACTION_NOT_FOUND(3006, "Giao dịch không tồn tại", HttpStatus.NOT_FOUND),
     ORDER_NOT_FOUND(3007, "Đơn hàng không tồn tại", HttpStatus.NOT_FOUND),
-
-
+    DELIVERY_NOT_FOUND(3008, "Đơn vận chuyển không tồn tại", HttpStatus.NOT_FOUND),
+    SHIPPING_METHOD_NOT_FOUND(3008, "Phương thức vận chuyển không tồn tại", HttpStatus.NOT_FOUND),
     //4xxx: Order Validation
     ORDER_ALREADY_CANCELLED(4000, "Đơn hàng đã bị hủy", HttpStatus.BAD_REQUEST),
     ORDER_ALREADY_COMPLETED(4001, "Đơn hàng đã hoàn tất và không thể chỉnh sửa", HttpStatus.BAD_REQUEST),
     ORDER_STATUS_INVALID_TRANSITION(4002, "Không thể chuyển trạng thái đơn hàng", HttpStatus.BAD_REQUEST),
+    ORDER_NOT_ELIGIBLE_FOR_CONFIRMATION(4003, "Đơn hàng không đủ điều kiện để xác nhận", HttpStatus.BAD_REQUEST),
 
+    // 4xxx: Delivery Validation
+    DELIVERY_CANNOT_BE_MODIFIED(4020, "Chỉ có thể cập nhật đơn giao hàng ở trạng thái PENDING", HttpStatus.BAD_REQUEST),
+    DELIVERY_STATUS_CANNOT_BE_CHANGED(4021, "Không thể thay đổi trạng thái khi đơn đã giao hoặc bị hủy", HttpStatus.BAD_REQUEST),
 
     // 9999: Uncategorized
     UNCATEGORIZED_EXCEPTION(9999, "Lỗi không xác định", HttpStatus.INTERNAL_SERVER_ERROR);

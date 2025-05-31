@@ -37,3 +37,5 @@ jwt:
   signerKey: "XcAwK8Rtvw6J8Rds07aAwhsqrsiDqq5OShc8ngOgyuuxWpe83B6rOpZBwif8LCkQ"
   valid-duration: 3600  # in second
   refreshable-duration: 360000 # in seconds
+app:
+  base-url: http://localhost:8080/api

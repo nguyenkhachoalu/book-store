@@ -2,17 +2,14 @@ package com.project_sem4.book_store.service;
 
 import com.project_sem4.book_store.dto.handle.handle_email.EmailMessage;
 import com.project_sem4.book_store.dto.mapper.OrderMapper;
-import com.project_sem4.book_store.dto.request.transaction_request.TransactionCreateRequest;
 import com.project_sem4.book_store.dto.response.PagedResponse;
-import com.project_sem4.book_store.dto.response.data_response_cart.CartItemResponse;
 import com.project_sem4.book_store.dto.response.data_response_order.OrderConfirmResponse;
 import com.project_sem4.book_store.dto.response.data_response_order.OrderDetailResponse;
 import com.project_sem4.book_store.dto.response.data_response_order.OrderResponse;
 import com.project_sem4.book_store.dto.response.data_response_order.OrderWithDetailsResponse;
 import com.project_sem4.book_store.entity.*;
-import com.project_sem4.book_store.enum_type.OrderSearchType;
+import com.project_sem4.book_store.enum_type.OrderStatusFilter;
 import com.project_sem4.book_store.enum_type.OrderStatus;
-import com.project_sem4.book_store.enum_type.TransactionType;
 import com.project_sem4.book_store.exception.AppException;
 import com.project_sem4.book_store.exception.ErrorCode;
 import com.project_sem4.book_store.repository.*;
@@ -108,8 +105,6 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
-        order.setOrderStatus(newStatus);
-        order.setUpdatedAt(LocalDateTime.now());
         if(order.getOrderStatus() == OrderStatus.CANCELLED){
             throw new AppException(ErrorCode.ORDER_ALREADY_CANCELLED);
         }
@@ -119,9 +114,17 @@ public class OrderService {
         if(newStatus == OrderStatus.CONFIRMED){
             sendConfirmEmail(order);
         }
+        if(newStatus == OrderStatus.COMPLETED){
+            sendCompletedEmail(order);
+        }
         if(newStatus == OrderStatus.CANCELLED){
             restoreBooksFromCancelledOrder(order.getId());
+            sendCancelledEmail(order);
         }
+
+        order.setOrderStatus(newStatus);
+        order.setUpdatedAt(LocalDateTime.now());
+
         return orderRepository.save(order);
     }
 
@@ -140,7 +143,7 @@ public class OrderService {
                 .toList();
     }
 
-    public PagedResponse<OrderResponse> getPagedOrders(String keyword, OrderSearchType type, Pageable pageable) {
+    public PagedResponse<OrderResponse> getPagedOrders(String keyword, OrderStatusFilter type, Pageable pageable) {
         Page<OrderResponse> page = orderRepository.searchOrders(keyword, type, pageable);
 
         return PagedResponse.<OrderResponse>builder()
@@ -163,6 +166,32 @@ public class OrderService {
 
         return orderMapper.toOrderResponse(order, username);
     }
+
+    public List<OrderResponse> getOrdersByUserId(UUID userId) {
+        List<Order> orders = orderRepository.findByUserId(userId);
+
+        if (orders.isEmpty()) {
+            throw new AppException(ErrorCode.ORDER_NOT_FOUND);
+        }
+
+        String username = userRepository.findById(userId)
+                .map(User::getUsername)
+                .orElse("UNKNOWN");
+
+        return orders.stream()
+                .map(order -> new OrderResponse(
+                        order.getId(),
+                        order.getUserId(),
+                        username,
+                        order.getTotalAmount(),
+                        order.getOrderStatus(),
+                        order.getCreatedAt(),
+                        order.getUpdatedAt(),
+                        order.getIsActive()
+                ))
+                .collect(Collectors.toList());
+    }
+
 
     public OrderWithDetailsResponse getOrderWithDetails(UUID orderId) {
         Order order = orderRepository.findById(orderId)
@@ -214,6 +243,23 @@ public class OrderService {
         User user = userRepository.findById(order.getUserId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         String emailContent = emailService.generateOrderConfirmEmail(user.getFullName());
+        EmailMessage message = new EmailMessage(List.of(user.getEmail()),
+                "Đơn hàng của " + user.getUsername(), emailContent);
+        emailService.sendEmail(message);
+    }
+    private void sendCompletedEmail(Order order) {
+        User user = userRepository.findById(order.getUserId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        String emailContent = emailService.generateDeliveryCompletionEmail(user.getFullName());
+        EmailMessage message = new EmailMessage(List.of(user.getEmail()),
+                "Đơn hàng của " + user.getUsername(), emailContent);
+        emailService.sendEmail(message);
+    }
+
+    private void sendCancelledEmail(Order order) {
+        User user = userRepository.findById(order.getUserId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        String emailContent = emailService.generateCancelledEmail(user.getFullName());
         EmailMessage message = new EmailMessage(List.of(user.getEmail()),
                 "Đơn hàng của " + user.getUsername(), emailContent);
         emailService.sendEmail(message);

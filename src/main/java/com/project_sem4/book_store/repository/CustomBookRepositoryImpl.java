@@ -42,7 +42,7 @@ public class CustomBookRepositoryImpl implements CustomBookRepository {
         String whereClause = "WHERE " + keywordCondition + priceCondition;
 
         // Query chính
-        String dataQueryStr = "SELECT DISTINCT b " + baseFrom + whereClause;
+        String dataQueryStr = "SELECT DISTINCT b " + baseFrom + whereClause +" ORDER BY b.createdAt DESC";
         TypedQuery<Book> dataQuery = entityManager.createQuery(dataQueryStr, Book.class);
         dataQuery.setParameter("keyword", "%" + keyword.toLowerCase() + "%");
         if (minPrice != null) dataQuery.setParameter("minPrice", minPrice);

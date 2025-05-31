@@ -6,7 +6,7 @@ import com.project_sem4.book_store.dto.response.data_response_order.OrderConfirm
 import com.project_sem4.book_store.dto.response.data_response_order.OrderResponse;
 import com.project_sem4.book_store.dto.response.data_response_order.OrderWithDetailsResponse;
 import com.project_sem4.book_store.entity.Order;
-import com.project_sem4.book_store.enum_type.OrderSearchType;
+import com.project_sem4.book_store.enum_type.OrderStatusFilter;
 import com.project_sem4.book_store.enum_type.OrderStatus;
 import com.project_sem4.book_store.service.OrderService;
 import lombok.AccessLevel;
@@ -42,7 +42,7 @@ public class OrderController {
     @GetMapping
     public ApiResponse<PagedResponse<OrderResponse>> getPagedOrders(
             @RequestParam(defaultValue = "") String keyword,
-            @RequestParam(defaultValue = "ALL") OrderSearchType type,
+            @RequestParam(defaultValue = "ALL") OrderStatusFilter type,
             Pageable pageable) {
         return ApiResponse.<PagedResponse<OrderResponse>>builder()
                 .result(orderService.getPagedOrders(keyword, type, pageable))
@@ -69,6 +69,12 @@ public class OrderController {
             @RequestParam OrderStatus status) {
         return ApiResponse.<Order>builder()
                 .result(orderService.updateOrderStatus(orderId, status))
+                .build();
+    }
+    @GetMapping("/history/{userId}")
+    public ApiResponse<List<OrderResponse>> getOrdersByUserId(@PathVariable UUID userId) {
+        return ApiResponse.<List<OrderResponse>>builder()
+                .result(orderService.getOrdersByUserId(userId))
                 .build();
     }
 }

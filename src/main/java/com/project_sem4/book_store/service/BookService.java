@@ -19,13 +19,19 @@ import com.project_sem4.book_store.repository.CategoryRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +50,12 @@ public class BookService {
     AuthorRepository authorRepository;
     BookMapper bookMapper;
 
+    FileStorageService fileStorageService;
+
+    @Value("${app.base-url}")
+    @NonFinal
+    String baseUrl;
+
 
     public PagedResponse<GetPagedBookResponse> searchBooks(String keyword,
                                                            BookSearchType type,
@@ -53,9 +65,15 @@ public class BookService {
         try {
             Page<GetPagedBookResponse> bookPage = bookRepository
                     .searchBooks(keyword, type, minPrice, maxPrice, pageable);
-
+            List<GetPagedBookResponse> updatedBooks = bookPage.getContent().stream()
+                    .peek(book -> {
+                        if (book.getCoverImage() != null) {
+                            book.setCoverImage(baseUrl + "/uploads/books/" + book.getCoverImage());
+                        }
+                    })
+                    .collect(Collectors.toList());
             return PagedResponse.<GetPagedBookResponse>builder()
-                    .content(bookPage.getContent())
+                    .content(updatedBooks)
                     .pageNumber(bookPage.getNumber())
                     .pageSize(bookPage.getSize())
                     .totalElements(bookPage.getTotalElements())
@@ -86,16 +104,17 @@ public class BookService {
                 .price(book.getPrice())
                 .quantity(book.getQuantity())
                 .description(book.getDescription())
-                .coverImage(book.getCoverImage())
+                .coverImage(book.getCoverImage() != null ? baseUrl + "/uploads/books/" + book.getCoverImage() : null)
                 .createdAt(book.getCreatedAt())
                 .updatedAt(book.getUpdatedAt())
                 .categories(categories)
                 .build();
     }
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public BookResponse createBook(BookCreateRequest request) {
+    public BookResponse createBook(BookCreateRequest request, MultipartFile imageFile) {
         try {
             validateRequest(request);
+
+            String imageFilename = storeBookImage(imageFile, null);
 
             Book book = Book.builder()
                     .title(request.getTitle())
@@ -103,7 +122,7 @@ public class BookService {
                     .price(request.getPrice())
                     .quantity(request.getQuantity())
                     .description(request.getDescription())
-                    .coverImage(request.getCoverImage())
+                    .coverImage(imageFilename)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .isActive(true)
@@ -124,20 +143,22 @@ public class BookService {
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
         }
     }
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public BookResponse updateBook(UUID bookId, BookCreateRequest request) {
+
+    public BookResponse updateBook(UUID bookId, BookCreateRequest request, MultipartFile imageFile) {
         try {
             validateRequest(request);
 
             Book book = bookRepository.findById(bookId)
                     .orElseThrow(() -> new AppException(ErrorCode.BOOK_NOT_FOUND));
 
+            String newImageFilename = storeBookImage(imageFile, book.getCoverImage());
+
             book.setTitle(request.getTitle());
             book.setAuthorId(request.getAuthorId());
             book.setPrice(request.getPrice());
             book.setQuantity(request.getQuantity());
             book.setDescription(request.getDescription());
-            book.setCoverImage(request.getCoverImage());
+            book.setCoverImage(newImageFilename);
             book.setUpdatedAt(LocalDateTime.now());
 
             bookRepository.save(book);
@@ -168,7 +189,6 @@ public class BookService {
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
         }
     }
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public String deleteBook(UUID bookId) {
         try {
             Book book = bookRepository.findById(bookId)
@@ -208,5 +228,20 @@ public class BookService {
         if (existingCategoryIds.size() != categoryIds.size()) {
             throw new AppException(ErrorCode.CATEGORY_NOT_FOUND);
         }
+    }
+
+
+    public String storeBookImage(MultipartFile imageFile, String oldFilename) {
+        if (imageFile == null || imageFile.isEmpty()) return oldFilename;
+
+        if (oldFilename != null) {
+            try {
+                Files.deleteIfExists(Paths.get("uploads/books", oldFilename));
+            } catch (IOException e) {
+                log.warn("Không thể xóa ảnh sách cũ: {}", oldFilename);
+            }
+        }
+
+        return fileStorageService.storeFile(imageFile, "books");
     }
 }

@@ -8,4 +8,5 @@ import java.util.UUID;
 
 public interface OrderRepository extends BaseRepository<Order, UUID>, CustomOrderRepository {
     List<Order> findByOrderStatus(OrderStatus orderStatus);
+    List<Order> findByUserId(UUID userId);
 }

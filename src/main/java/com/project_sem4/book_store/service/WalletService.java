@@ -1,5 +1,6 @@
 package com.project_sem4.book_store.service;
 
+import com.project_sem4.book_store.dto.request.wallet_request.WalletTransactionRequest;
 import com.project_sem4.book_store.entity.Wallet;
 import com.project_sem4.book_store.enum_type.TransactionType;
 import com.project_sem4.book_store.exception.AppException;
@@ -53,34 +54,41 @@ public class WalletService {
         walletRepository.save(wallet);
     }
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER','SELLER')")
-    public void deposit(UUID userId, BigDecimal amount, String description) {
-        Wallet wallet = walletRepository.findByUserId(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.WALLET_NOT_FOUND));
+    public void deposit(WalletTransactionRequest request) {
+       try{
+           Wallet wallet = walletRepository.findByUserId(request.getUserId())
+                   .orElseThrow(() -> new AppException(ErrorCode.WALLET_NOT_FOUND));
 
-        validateWallet(wallet);
-        validateAmount(amount);
+           validateWallet(wallet);
+           validateAmount(request.getAmount());
 
-        wallet.increaseBalance(amount);
-        walletRepository.save(wallet);
+           wallet.increaseBalance(request.getAmount());
+           walletRepository.save(wallet);
 
-        transactionService.log(wallet.getId(), amount, TransactionType.DEPOSIT, description);
+           transactionService.log(wallet.getId(), request.getAmount(), TransactionType.DEPOSIT, request.getDescription());
+       }catch (AppException e) {
+           throw e;
+       }catch (Exception e) {
+           log.error("Change password failed", e);
+           throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+       }
     }
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public void withdraw(UUID userId, BigDecimal amount, String description) {
-        Wallet wallet = walletRepository.findByUserId(userId)
+    public void withdraw(WalletTransactionRequest request) {
+        Wallet wallet = walletRepository.findByUserId(request.getUserId())
                 .orElseThrow(() -> new AppException(ErrorCode.WALLET_NOT_FOUND));
 
         validateWallet(wallet);
-        validateAmount(amount);
+        validateAmount(request.getAmount());
 
-        if (wallet.getBalance().compareTo(amount) < 0) {
+        if (wallet.getBalance().compareTo(request.getAmount()) < 0) {
             throw new AppException(ErrorCode.INSUFFICIENT_BALANCE);
         }
 
-        wallet.decreaseBalance(amount);
+        wallet.decreaseBalance(request.getAmount());
         walletRepository.save(wallet);
 
-        transactionService.log(wallet.getId(), amount, TransactionType.WITHDRAWAL, description);
+        transactionService.log(wallet.getId(), request.getAmount(), TransactionType.WITHDRAWAL, request.getDescription());
     }
 
     public void purchase(UUID userId, BigDecimal amount, String description) {

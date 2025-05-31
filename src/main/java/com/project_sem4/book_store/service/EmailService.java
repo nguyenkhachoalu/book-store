@@ -7,5 +7,6 @@ public interface EmailService {
     String generateConfirmationCodeEmail(String confirmationCode);
     String generateForgotPassword(String newPassword);
     String generateOrderConfirmEmail(String userName);
-    String generateDeliveryCompletionEmail(String projectName);
+    String generateDeliveryCompletionEmail(String full_name);
+    String generateCancelledEmail(String full_name);
 }

@@ -25,9 +25,6 @@ public class Delivery {
     @Column(name = "shipping_method_id", nullable = false)
     UUID shippingMethodId;
 
-    @Column(name = "customer_id", nullable = false)
-    UUID customerId;
-
     @Column(name = "shipper_id", nullable = false)
     UUID shipperId;
 

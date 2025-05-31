@@ -1,5 +1,7 @@
 package com.project_sem4.book_store.service;
 
+import com.project_sem4.book_store.dto.request.cart_request.AddToCartRequest;
+import com.project_sem4.book_store.dto.request.cart_request.UpdateCartItemRequest;
 import com.project_sem4.book_store.dto.response.data_response_cart.CartItemResponse;
 import com.project_sem4.book_store.dto.response.data_response_cart.GetCartResponse;
 import com.project_sem4.book_store.entity.*;
@@ -32,19 +34,19 @@ public class CartService {
     CartItemRepository cartItemRepository;
     BookRepository bookRepository;
 
-    public void addToCart(UUID userId, UUID bookId, int quantity) {
-        if (quantity <= 0) throw new AppException(ErrorCode.INVALID_QUANTITY);
+    public void addToCart(AddToCartRequest request) {
+        if (request.getQuantity() <= 0) throw new AppException(ErrorCode.INVALID_QUANTITY);
 
-        Book book = bookRepository.findById(bookId)
+        Book book = bookRepository.findById(request.getBookId())
                 .orElseThrow(() -> new AppException(ErrorCode.BOOK_NOT_FOUND));
 
-        if (book.getQuantity() < quantity) {
+        if (book.getQuantity() < request.getQuantity()) {
             throw new AppException(ErrorCode.INSUFFICIENT_BOOK_QUANTITY);
         }
-
-        Cart cart = cartRepository.findByUserId(userId).orElseGet(() -> {
+        userRepository.findById(request.getUserId()).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        Cart cart = cartRepository.findByUserId(request.getUserId()).orElseGet(() -> {
             Cart newCart = Cart.builder()
-                    .userId(userId)
+                    .userId(request.getUserId())
                     .totalPrice(BigDecimal.ZERO)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
@@ -53,14 +55,14 @@ public class CartService {
             return cartRepository.save(newCart);
         });
 
-        CartItemId cartItemId = new CartItemId(cart.getId(), bookId);
+        CartItemId cartItemId = new CartItemId(cart.getId(), request.getBookId());
         Optional<CartItem> existingItemOpt = cartItemRepository.findById(cartItemId);
 
-        BigDecimal newItemTotal = book.getPrice().multiply(BigDecimal.valueOf(quantity));
+        BigDecimal newItemTotal = book.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()));
 
         if (existingItemOpt.isPresent()) {
             CartItem item = existingItemOpt.get();
-            int updatedQty = item.getQuantity() + quantity;
+            int updatedQty = item.getQuantity() + request.getQuantity();
 
             if (updatedQty > book.getQuantity()) {
                 throw new AppException(ErrorCode.INSUFFICIENT_BOOK_QUANTITY);
@@ -73,8 +75,8 @@ public class CartService {
         } else {
             CartItem newItem = CartItem.builder()
                     .cartId(cart.getId())
-                    .bookId(bookId)
-                    .quantity(quantity)
+                    .bookId(request.getBookId())
+                    .quantity(request.getQuantity())
                     .price(newItemTotal)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
@@ -131,35 +133,39 @@ public class CartService {
 
         cartItemRepository.delete(item);
 
-        BigDecimal updatedTotal = cartItemRepository.sumTotalPriceByCartId(cart.getId());
-        cart.setTotalPrice(updatedTotal);
-        cart.setUpdatedAt(LocalDateTime.now());
-        cartRepository.save(cart);
+        updateCartTotal(cart);
     }
-    public void updateCartItem(UUID userId, UUID bookId, int quantity) {
-        if (quantity <= 0)
+    public void updateCartItem(UpdateCartItemRequest request) {
+        try{
+        if (request.getQuantity() <= 0)
             throw new AppException(ErrorCode.INVALID_QUANTITY);
 
-        Book book = bookRepository.findById(bookId)
+        Book book = bookRepository.findById(request.getBookId())
                 .orElseThrow(() -> new AppException(ErrorCode.BOOK_NOT_FOUND));
 
-        if (book.getQuantity() < quantity) {
+        if (book.getQuantity() < request.getQuantity()) {
             throw new AppException(ErrorCode.INSUFFICIENT_BOOK_QUANTITY);
         }
 
-        Cart cart = cartRepository.findByUserId(userId)
+        Cart cart = cartRepository.findByUserId(request.getUserId())
                 .orElseThrow(() -> new AppException(ErrorCode.CART_NOT_FOUND));
 
-        CartItemId cartItemId = new CartItemId(cart.getId(), bookId);
+        CartItemId cartItemId = new CartItemId(cart.getId(), request.getBookId());
         CartItem item = cartItemRepository.findById(cartItemId)
                 .orElseThrow(() -> new AppException(ErrorCode.CART_ITEM_NOT_FOUND));
 
-        item.setQuantity(quantity);
-        item.setPrice(book.getPrice().multiply(BigDecimal.valueOf(quantity)));
+        item.setQuantity(request.getQuantity());
+        item.setPrice(book.getPrice().multiply(BigDecimal.valueOf(request.getQuantity())));
         item.setUpdatedAt(LocalDateTime.now());
         cartItemRepository.save(item);
 
         updateCartTotal(cart);
+    } catch (AppException e) {
+        throw e;
+    } catch (Exception e) {
+        log.error("Login failed", e);
+        throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+    }
     }
     private void updateCartTotal(Cart cart) {
         BigDecimal updatedTotal = cartItemRepository.sumTotalPriceByCartId(cart.getId());

@@ -96,11 +96,11 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public String generateDeliveryCompletionEmail(String projectName) {
+    public String generateDeliveryCompletionEmail(String full_name) {
         return "<html>" +
                 "<body style='font-family: Arial, sans-serif; text-align: center;'>" +
                 "<div style='border: 1px solid #ddd; padding: 20px; max-width: 600px; margin: 0 auto;'>" +
-                "<h2 style='color: #333;'>Đơn hàng " + projectName + " đã được giao thành công</h2>" +
+                "<h2 style='color: #333;'>Đơn hàng " + full_name + " đã được giao thành công</h2>" +
                 "<p>Xin chào,</p>" +
                 "<p>Đơn hàng của bạn đã được giao hàng thành công.</p>" +
                 "<p>Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của chúng tôi.</p><br/>" +
@@ -109,5 +109,17 @@ public class EmailServiceImpl implements EmailService {
                 "<p><i>Đội ngũ hỗ trợ của chúng tôi</i></p>" +
                 "</div></body></html>";
     }
-
+    public String generateCancelledEmail(String full_name){
+        return "<html>" +
+                "<body style='font-family: Arial, sans-serif; text-align: center;'>" +
+                "<div style='border: 1px solid #ddd; padding: 20px; max-width: 600px; margin: 0 auto;'>" +
+                "<h2 style='color: #333;'>Đơn hàng " + full_name + " đã bị hủy</h2>" +
+                "<p>Xin chào,</p>" +
+                "<p>Đơn hàng của bạn đã bị hủy.</p>" +
+                "<p>Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của chúng tôi.</p><br/>" +
+                "<p>Chúc bạn một ngày tốt lành!</p>" +
+                "<p>Trân trọng,</p>" +
+                "<p><i>Đội ngũ hỗ trợ của chúng tôi</i></p>" +
+                "</div></body></html>";
+    }
 }

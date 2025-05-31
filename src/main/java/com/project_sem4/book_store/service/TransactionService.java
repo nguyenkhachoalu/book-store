@@ -2,6 +2,7 @@ package com.project_sem4.book_store.service;
 
 import com.project_sem4.book_store.dto.request.transaction_request.TransactionCreateRequest;
 import com.project_sem4.book_store.entity.Transaction;
+import com.project_sem4.book_store.entity.Wallet;
 import com.project_sem4.book_store.enum_type.TransactionType;
 import com.project_sem4.book_store.exception.AppException;
 import com.project_sem4.book_store.exception.ErrorCode;
@@ -47,10 +48,10 @@ public class TransactionService {
 
 
 
-    public List<Transaction> getTransactionsByWalletId(UUID walletId) {
-        walletRepository.findById(walletId)
+    public List<Transaction> getTransactionsByUserId(UUID userId) {
+        Wallet wallet =  walletRepository.findByUserId(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.WALLET_NOT_FOUND));
 
-        return transactionRepository.findAllByWalletId(walletId);
+        return transactionRepository.findAllByWalletId(wallet.getId());
     }
 }
